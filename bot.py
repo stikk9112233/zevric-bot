@@ -1,7 +1,5 @@
 import telebot
 from telebot import types
-from telebot import apihelper
-apihelper.proxy = {'https': 'http://proxy.server:3128', 'http': 'http://proxy.server:3128'}
 import os
 
 BOT_TOKEN = "8847907390:AAFkEtCtZ6qaAVIrXrRfyDdUxqvaGGLHfu0"
