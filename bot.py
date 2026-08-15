@@ -279,7 +279,7 @@ def cb(call):
         elif d == "share":
             bot.send_message(call.message.chat.id, f"📤 <b>SHARE & EARN ₹20 🔥</b>\n━━━━━━━━━━━━\n👥 Dost ko bot share karo:\n🔗 <code>{BOT_LINK}</code>\n\n💰 Har referral pe ₹20 discount!\n📞 Support: @{SUPPORT_USERNAME}\n\nShare karo aur kamao! 🚀", parse_mode="HTML")
         elif d == "rate":
-            bot.send_message(call.message.chat.id, "⭐ <b>RATE US 5 STAR ⭐</b>\n━━━━━━━━━━━━\n🙏 Agar service pasand aayi ho to\n⭐ 5 Star de do!\n\n📸 Screenshot bhejo support pe @just_zervic\n🎁 Next order pe 10% OFF milega! Code: ZEVRIC10\n\nThank you! 🔥❤️", parse_mode="HTML")
+            bot.send_message(call.message.chat.id, "⭐ <b>RATE US 5 STAR ⭐</b>\n━━━━━━━━━━━━\n🙏 Agar service pasand aayi ho to\n⭐ 5 Star de do!\n\n📸 Screenshot bhejo support pe @just_zevric\n🎁 Next order pe 10% OFF milega! Code: ZEVRIC10\n\nThank you! 🔥❤️", parse_mode="HTML")
         elif d.startswith("p_"):
             page = int(d.split("_")[1])
             bot.edit_message_text(f"🌍 <b>Page {page+1} - Select Server 🔥</b>\n💜 Premium Quality 💜", call.message.chat.id, call.message.message_id, parse_mode="HTML", reply_markup=country_menu(page))
