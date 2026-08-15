@@ -1,6 +1,8 @@
 import telebot
 from telebot import types
 import os
+from flask import Flask
+import threading
 
 BOT_TOKEN = "8847907390:AAFkEtCtZ6qaAVIrXrRfyDdUxqvaGGLHfu0"
 ADMIN_ID = 8981733976
@@ -387,4 +389,14 @@ def photo_handler(message):
     bot.send_message(message.chat.id, f"📸 Screenshot Received for {info['flag']} {info['sname']} ✅\n⏳ Admin 2 min me check karega! 🚀\n\nAfter payment:\n1️⃣ Admin number dega\n2️⃣ Whatsapp me login karo\n3️⃣ Niche <b>Get OTP</b> dabao\n4️⃣ OTP mil jayega! 💜", parse_mode="HTML")
 
 print("FINAL PERFECT - NO ID - HOWTOBUY FIXED - RETENTION - STARTED 🔥🔥🔥")
+app = Flask(__name__)
+@app.route('/')
+def home():
+    return "Zevric Bot is Running!"
+
+def run_web():
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
+
+threading.Thread(target=run_web).start()
+
 bot.infinity_polling(skip_pending=True, timeout=10, long_polling_timeout=10, allowed_updates=["message","callback_query"], none_stop=True)
