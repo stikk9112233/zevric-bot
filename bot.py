@@ -9,7 +9,7 @@ ADMIN_ID = 8981733976
 UPI_ID = "zervicxplay@okhdfcbank"
 SUPPORT_USERNAME = "just_zevric"
 SUPPORT_LINK = "https://t.me/just_zevric"
-BOT_LINK = "https://t.me/Zervic_Otp_Bazar_bot"
+BOT_LINK = "https://t.me/zevricotp_bot
 
 COUNTRIES = {
     "ARGENTINA_SERVER_1": {"flag": "🇦🇷", "sname": "Argentina server 1", "code": "+54", "price": 95, "country": "Argentina"},
