@@ -4,7 +4,7 @@ import os
 from flask import Flask
 import threading
 
-BOT_TOKEN = "8855823255:AAGe8a9FYnjIJTz2WWncDJ7kenDbLI4YMBE"
+BOT_TOKEN = os.getenv("BOT_TOKEN", "8855823255:AAGe8a9FYnjIJTz2WWncDJ7kenDbLI4YMBE")
 ADMIN_ID = 8981733976
 UPI_ID = "zervicxplay@okhdfcbank"
 SUPPORT_USERNAME = "just_zevric"
