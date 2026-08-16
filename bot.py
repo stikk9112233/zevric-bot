@@ -7,6 +7,7 @@ import threading
 BOT_TOKEN = os.getenv("BOT_TOKEN", "8855823255:AAGe8a9FYnjIJTz2WWncDJ7kenDbLI4YMBE")
 ADMIN_ID = 8981733976
 UPI_ID = "zervicxplay@okhdfcbank"
+USDT_ADDRESS = "TLwAWcJ7Tm34jqyYqV6qhizQHy8pe7US1V"
 SUPPORT_USERNAME = "just_zevric"
 SUPPORT_LINK = "https://t.me/just_zevric"
 BOT_LINK = "https://t.me/zevricotp_bot"
@@ -85,10 +86,8 @@ try:
 except:
     QR_OK = False
 
-# === CLEAN COMMAND MENU - NO ID - HOWTOBUY FIXED ===
 def set_commands():
     try:
-        # Delete old first
         bot.delete_my_commands()
         bot.delete_my_commands(scope=types.BotCommandScopeAllPrivateChats())
         bot.delete_my_commands(scope=types.BotCommandScopeAllGroupChats())
@@ -111,13 +110,23 @@ set_commands()
 user_selection = {}
 user_numbers = {}
 
-def make_qr(amount):
+def make_upi_qr(amount):
     if not QR_OK: return None
     try:
         import qrcode
         upi_str = f"upi://pay?pa={UPI_ID}&pn=ZEVRIC OTP BAZAAR&am={amount}&cu=INR"
         qr = qrcode.make(upi_str)
-        path = f"/tmp/qr_{amount}.png"
+        path = f"/tmp/qr_upi_{amount}.png"
+        qr.save(path)
+        return path
+    except: return None
+
+def make_usdt_qr():
+    if not QR_OK: return None
+    try:
+        import qrcode
+        qr = qrcode.make(USDT_ADDRESS)
+        path = f"/tmp/qr_usdt.png"
         qr.save(path)
         return path
     except: return None
@@ -134,6 +143,17 @@ def country_menu(page=0):
     if page>0: nav.append(types.InlineKeyboardButton("⬅️ Prev", callback_data=f"p_{page-1}"))
     if e < len(items): nav.append(types.InlineKeyboardButton("Next ➡️", callback_data=f"p_{page+1}"))
     if nav: mk.row(*nav)
+    mk.add(types.InlineKeyboardButton("🔙 Main Menu 🏠", callback_data="main"))
+    return mk
+
+def payment_method_menu(server_key):
+    # After selecting server, choose payment method - with BACK
+    mk = types.InlineKeyboardMarkup(row_width=2)
+    mk.add(
+        types.InlineKeyboardButton("🇮🇳 BUY with UPI", callback_data=f"payupi_{server_key}"),
+        types.InlineKeyboardButton("🌍 BUY with USDT", callback_data=f"payusdt_{server_key}")
+    )
+    mk.add(types.InlineKeyboardButton("⬅️ Back to Servers", callback_data="buy"))
     mk.add(types.InlineKeyboardButton("🔙 Main Menu 🏠", callback_data="main"))
     return mk
 
@@ -160,10 +180,10 @@ def welcome_text():
 💎 Trusted by 10K+ Users
 
 🎁 <b>Special Features:</b>
-🇮🇳 India | 🇺🇸 USA | 🇬🇧 UK | 🇨🇦 Canada
-🇮🇩 Indonesia | 🇵🇭 Philippines & 15+ Countries
+🇮🇳 India UPI | 🌍 Worldwide USDT (TRC20)
+🇺🇸 USA | 🇬🇧 UK | 🇨🇦 Canada & 15+ Countries
 
-💰 <b>Starting @ ₹59 Only!</b>
+💰 <b>Starting @ ₹59 / $0.70 Only!</b>
 ━━━━━━━━━━━━━━━━━━━━
 👇 <b>Select Karo & Start Karo:</b>"""
 
@@ -181,7 +201,6 @@ def start_handler(message):
     )
     m.add(types.InlineKeyboardButton("🌍 All 62 Servers", callback_data="buy"))
     try:
-        # Try to send with logo if exists, else text
         logo_path = "/mnt/data/image_B4075E28-65DF-48F7-90AC-A09C515A1A5D.jpeg"
         if os.path.exists(logo_path):
             with open(logo_path, 'rb') as f:
@@ -199,8 +218,8 @@ def buy_handler(message):
 def plist_handler(message):
     text = "💰 <b>ZEVRIC OTP BAZAAR - FULL PRICELIST 🔥</b>\n━━━━━━━━━━━━━━━━━━━━\n"
     for d in COUNTRIES.values():
-        text += f"{d['flag']} {d['sname']} {d['code']} = ₹{d['price']} ✅\n"
-    text += f"━━━━━━━━━━━━━━━━━━━━\n💳 UPI: <code>{UPI_ID}</code>\n📞 Support: @{SUPPORT_USERNAME}\n⚡ Instant Delivery!"
+        text += f"{d['flag']} {d['sname']} {d['code']} = ₹{d['price']} / ${round(d['price']/85,2)} ✅\n"
+    text += f"━━━━━━━━━━━━━━━━━━━━\n💳 UPI: <code>{UPI_ID}</code>\n🌍 USDT TRC20: <code>{USDT_ADDRESS}</code>\n📞 Support: @{SUPPORT_USERNAME}\n⚡ Instant Delivery!"
     for i in range(0, len(text), 4000):
         bot.send_message(message.chat.id, text[i:i+4000], parse_mode="HTML")
 
@@ -222,35 +241,34 @@ def support_handler(message):
     mk.add(types.InlineKeyboardButton("🛒 Buy Number", callback_data="buy"))
     bot.send_message(message.chat.id, txt, parse_mode="HTML", reply_markup=mk)
 
-# === HOWTOBUY FIXED - 100% WORKING ===
 @bot.message_handler(commands=['howtobuy','how','guide'])
 def howtobuy_handler(message):
-    txt = """📜 <b>HOW TO BUY - ZEVRIC OTP BAZAAR 🔥</b>
+    txt = f"""📜 <b>HOW TO BUY - ZEVRIC OTP BAZAAR 🔥</b>
 ━━━━━━━━━━━━━━━━━━━━
 💜 <b>Step By Step Guide:</b>
 
-1️⃣ /buy command dabao 🛒
+1️⃣ /buy dabao 🛒
 2️⃣ Server select karo (62 options) 🌍
-   Example: Canada server 16 - ₹90
-3️⃣ QR Code ayega - UPI se pay karo 💳
-   UPI: <code>zervicxplay@okhdfcbank</code>
-4️⃣ Screenshot bhejo 📸
-5️⃣ Admin 2 min me Approve karega ✅
-6️⃣ Number milega:+1623456783 📱
-7️⃣ Whatsapp me login karo 🔑
-8️⃣ Niche <b>Get OTP</b> button dabao 👇
-9️⃣ OTP milega: 465789 🎉
-🔟 Jaldi daalo - OTP expire ho jayega! ⚡
+3️⃣ Payment select karo:
+   🇮🇳 UPI - India ke liye
+   🌍 USDT TRC20 - Worldwide ke liye
+4️⃣ QR Code ayega - Pay karo 💳
+   UPI: <code>{UPI_ID}</code>
+   USDT: <code>{USDT_ADDRESS}</code>
+5️⃣ Screenshot / TxID bhejo 📸
+6️⃣ Admin 2 min me Approve karega ✅
+7️⃣ Number milega: +1623456783 📱
+8️⃣ Whatsapp me login karo 🔑
+9️⃣ Get OTP dabao 👇
+🔟 OTP milega! 🎉
 
 ━━━━━━━━━━━━━━━━━━━━
-💰 <b>Price:</b> ₹59 se start - ₹239 tak
-🌍 <b>62 Servers:</b> India, USA, UK, Canada etc
-⚡ <b>Delivery:</b> 2-5 min Instant
-✅ <b>100% Working Guarantee</b>
+💰 <b>Price:</b> ₹59 / $0.70 se start
+🌍 <b>62 Servers</b> | ⚡ <b>Instant Delivery</b>
+✅ <b>100% Working</b>
 
 📞 <b>Support:</b> @just_zevric
-━━━━━━━━━━━━━━━━━━━━
-👇 Ab Buy Karo:"""
+━━━━━━━━━━━━━━━━━━━━"""
     mk = types.InlineKeyboardMarkup(row_width=2)
     mk.add(
         types.InlineKeyboardButton("🛒 Buy Now 🔥", callback_data="buy"),
@@ -269,7 +287,7 @@ def cb(call):
             start_handler(call.message)
         elif d == "buy":
             try:
-                bot.edit_message_text("🌍 <b>SELECT SERVER A-Z - 62 Servers 🔥</b>\n💜 Premium Quality 💜", call.message.chat.id, call.message.message_id, parse_mode="HTML", reply_markup=country_menu(0))
+                bot.edit_message_text("🌍 <b>SELECT SERVER A-Z - 62 Servers 🔥</b>\n💜 Premium Quality 💜\n👇 Server select karo phir UPI/USDT chunna:", call.message.chat.id, call.message.message_id, parse_mode="HTML", reply_markup=country_menu(0))
             except:
                 bot.send_message(call.message.chat.id, "🌍 <b>SELECT SERVER - 62 Options! 🔥</b>", parse_mode="HTML", reply_markup=country_menu(0))
         elif d == "plist":
@@ -284,20 +302,56 @@ def cb(call):
             page = int(d.split("_")[1])
             bot.edit_message_text(f"🌍 <b>Page {page+1} - Select Server 🔥</b>\n💜 Premium Quality 💜", call.message.chat.id, call.message.message_id, parse_mode="HTML", reply_markup=country_menu(page))
         elif d.startswith("c_"):
+            # NEW: Show payment method selection first - with BACK
             key = d[2:]
             info = COUNTRIES.get(key)
             if not info: return
             user_selection[call.from_user.id] = key
-            qr_path = make_qr(info['price'])
-            caption = f"💳 <b>{info['flag']} {info['sname']}</b> 💳\n━━━━━━━━━━━━━━━━━━━━\n🌍 Country: {info['country']} {info['code']}\n💰 Price: <b>₹{info['price']}</b> ✅\n💳 UPI: <code>{UPI_ID}</code>\n━━━━━━━━━━━━━━━━━━━━\n💸 Pay <b>₹{info['price']} only</b> and send screenshot 📸\n⚡ Instant Delivery!\n\n<b>UPI ID: {UPI_ID}</b>\nScan QR and Pay 💜"
+            bot.answer_callback_query(call.id, f"{info['sname']} selected! 💜")
+            caption = f"✅ <b>{info['flag']} {info['sname']} Selected!</b>\n━━━━━━━━━━━━━━━━━━━━\n🌍 Country: {info['country']} {info['code']}\n💰 Price: <b>₹{info['price']} / ${round(info['price']/85,2)}</b> ✅\n━━━━━━━━━━━━━━━━━━━━\n💳 <b>Payment Method Chunno:</b>\n🇮🇳 UPI - India ke liye\n🌍 USDT TRC20 - Worldwide ke liye\n━━━━━━━━━━━━━━━━━━━━"
+            bot.edit_message_text(caption, call.message.chat.id, call.message.message_id, parse_mode="HTML", reply_markup=payment_method_menu(key))
+        
+        elif d.startswith("payupi_"):
+            key = d.split("payupi_")[1]
+            info = COUNTRIES.get(key)
+            if not info: return
+            user_selection[call.from_user.id] = key
+            qr_path = make_upi_qr(info['price'])
+            caption = f"🇮🇳 <b>UPI PAYMENT - {info['flag']} {info['sname']}</b> 🇮🇳\n━━━━━━━━━━━━━━━━━━━━\n🌍 {info['country']} {info['code']}\n💰 Price: <b>₹{info['price']}</b> ✅\n💳 UPI: <code>{UPI_ID}</code>\n━━━━━━━━━━━━━━━━━━━━\n💸 <b>₹{info['price']} pay karo aur screenshot bhejo 📸</b>\n⚡ Instant Delivery!\n\nScan QR and Pay 💜"
             mk = types.InlineKeyboardMarkup()
             mk.add(types.InlineKeyboardButton("📞 Support @just_zevric", url=SUPPORT_LINK))
-            bot.answer_callback_query(call.id, f"{info['sname']} selected! 💜")
+            mk.add(
+                types.InlineKeyboardButton("🌍 Switch to USDT", callback_data=f"payusdt_{key}"),
+                types.InlineKeyboardButton("⬅️ Back", callback_data=f"c_{key}")
+            )
+            mk.add(types.InlineKeyboardButton("🔙 Main Menu 🏠", callback_data="main"))
             if qr_path and os.path.exists(qr_path):
                 with open(qr_path,'rb') as f:
                     bot.send_photo(call.message.chat.id, f, caption=caption, parse_mode="HTML", reply_markup=mk)
             else:
                 bot.send_message(call.message.chat.id, caption, parse_mode="HTML", reply_markup=mk)
+        
+        elif d.startswith("payusdt_"):
+            key = d.split("payusdt_")[1]
+            info = COUNTRIES.get(key)
+            if not info: return
+            user_selection[call.from_user.id] = key
+            qr_path = make_usdt_qr()
+            usd_price = round(info['price']/85,2)
+            caption = f"🌍 <b>USDT PAYMENT - {info['flag']} {info['sname']}</b> 🌍\n━━━━━━━━━━━━━━━━━━━━\n🌍 {info['country']} {info['code']}\n💰 Price: <b>${usd_price} USDT (₹{info['price']})</b> ✅\n💳 Network: <b>TRON (TRC20)</b>\n📬 Address: <code>{USDT_ADDRESS}</code>\n━━━━━━━━━━━━━━━━━━━━\n💸 <b>${usd_price} USDT pay karo aur TxID bhejo 📸</b>\n⚠️ Only TRON network! BEP20/ERC20 = Lost\n⚡ Instant Delivery!\n\nScan QR and Pay 💜"
+            mk = types.InlineKeyboardMarkup()
+            mk.add(types.InlineKeyboardButton("📞 Support @just_zevric", url=SUPPORT_LINK))
+            mk.add(
+                types.InlineKeyboardButton("🇮🇳 Switch to UPI", callback_data=f"payupi_{key}"),
+                types.InlineKeyboardButton("⬅️ Back", callback_data=f"c_{key}")
+            )
+            mk.add(types.InlineKeyboardButton("🔙 Main Menu 🏠", callback_data="main"))
+            if qr_path and os.path.exists(qr_path):
+                with open(qr_path,'rb') as f:
+                    bot.send_photo(call.message.chat.id, f, caption=caption, parse_mode="HTML", reply_markup=mk)
+            else:
+                bot.send_message(call.message.chat.id, caption, parse_mode="HTML", reply_markup=mk)
+
         elif d.startswith("ap_"):
             uid = int(d.split("_")[1])
             key = d.split("_",2)[2] if len(d.split("_",2))>2 else ""
@@ -306,7 +360,7 @@ def cb(call):
             bot.send_message(uid, f"✅ <b>Payment Approved! 🎉</b>\n\n{info['flag']} {info['sname']} Approved ✅\n💰 ₹{info['price']}\n\n📱 Admin number bhej raha hai... ⏳", parse_mode="HTML")
         elif d.startswith("rj_"):
             uid = int(d.split("_")[1])
-            bot.send_message(uid, "❌ <b>Payment Rejected! ❌</b>\nSahi amount pay karo aur screenshot bhejo!\n📞 Support: @just_zervic", parse_mode="HTML")
+            bot.send_message(uid, "❌ <b>Payment Rejected! ❌</b>\nSahi amount pay karo aur screenshot bhejo!\n📞 Support: @just_zevric", parse_mode="HTML")
             bot.answer_callback_query(call.id, "Rejected!")
         elif d.startswith("go_"):
             uid = int(d.split("_")[1])
@@ -343,7 +397,6 @@ def give_otp(message):
         num = user_numbers.get(uid, "")
         bot.send_message(uid, f"🔑 <b>OTP READY! 🎉</b> 🔑\n━━━━━━━━━━━━\n📱 Number: <code>{num}</code>\n🔐 OTP: <code>{otp}</code>\n━━━━━━━━━━━━\n⚡ Jaldi daalo! OTP expire ho jayega!", parse_mode="HTML")
         bot.send_message(message.chat.id, f"✅ OTP {otp} sent to {uid} 🔥")
-
         import time
         time.sleep(1)
         retention_text = f"""🎉 <b>ORDER COMPLETED SUCCESSFULLY! 🔥</b> 🎉
@@ -366,7 +419,6 @@ def give_otp(message):
 💜 <b>ZEVRIC OTP BAZAAR - Trusted by 10K+ Users</b>
 """
         bot.send_message(uid, retention_text, parse_mode="HTML", reply_markup=retention_menu())
-
     except Exception as e:
         bot.send_message(message.chat.id, f"Use: /otp USERID OTP\n{e}")
 
@@ -380,7 +432,7 @@ def photo_handler(message):
     info = COUNTRIES[sel]
     username = f"@{message.from_user.username}" if message.from_user.username else "No username"
     name = message.from_user.first_name or ""
-    order_txt = f"💰 <b>NEW ORDER - {info['flag']} {info['sname']} 🔥</b>\n━━━━━━━━━━━━\n💰 Price: ₹{info['price']}\n👤 {username} | {name} 🚀\n🆔 ID: <code>{uid}</code>\n🌍 Server: {info['sname']}"
+    order_txt = f"💰 <b>NEW ORDER - {info['flag']} {info['sname']} 🔥</b>\n━━━━━━━━━━━━\n💰 Price: ₹{info['price']} / ${round(info['price']/85,2)} USDT\n👤 {username} | {name} 🚀\n🆔 ID: <code>{uid}</code>\n🌍 Server: {info['sname']}"
     bot.send_message(ADMIN_ID, order_txt, parse_mode="HTML")
     bot.forward_message(ADMIN_ID, message.chat.id, message.message_id)
     mk = types.InlineKeyboardMarkup(row_width=2)
@@ -388,15 +440,14 @@ def photo_handler(message):
     bot.send_message(ADMIN_ID, "👇 Action Lo:", reply_markup=mk)
     bot.send_message(message.chat.id, f"📸 Screenshot Received for {info['flag']} {info['sname']} ✅\n⏳ Admin 2 min me check karega! 🚀\n\nAfter payment:\n1️⃣ Admin number dega\n2️⃣ Whatsapp me login karo\n3️⃣ Niche <b>Get OTP</b> dabao\n4️⃣ OTP mil jayega! 💜", parse_mode="HTML")
 
-print("FINAL PERFECT - NO ID - HOWTOBUY FIXED - RETENTION - STARTED 🔥🔥🔥")
+print("FINAL PERFECT - UPI + USDT + BACK + 62 SERVERS - STARTED 🔥🔥🔥")
 app = Flask(__name__)
 @app.route('/')
 def home():
-    return "Zevric Bot is Running!"
+    return "Zevric Bot Running - UPI + USDT"
 
 def run_web():
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
 
 threading.Thread(target=run_web).start()
-
 bot.infinity_polling(skip_pending=True, timeout=10, long_polling_timeout=10, allowed_updates=["message","callback_query"], none_stop=True)
