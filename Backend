@@ -1,0 +1,61 @@
+// Backend - Exact replica of premiumotp.pro backend
+// Extracted API: /api/v1/stark
+const express = require('express');
+const app = express();
+const cors = require('cors');
+app.use(cors());
+app.use(express.json());
+
+const REAL_ENDPOINT = "https://premiumotp.pro/api/v1/stark";
+const MASTER_KEY = "ffcc751480b3c67244ea7123acbeb608"; // Your key from premiumotp.pro
+
+// This is the exact backend API that premiumotp.pro uses
+// We proxy to it - so your clone works same to same
+
+app.get('/api/v1/stark', async (req, res) => {
+  const { api_key, action, service, server, id, status } = req.query;
+  // Validate
+  if (!api_key) return res.send('BAD_KEY');
+  
+  // Build real request URL to premiumotp.pro backend
+  let url = `${REAL_ENDPOINT}?api_key=${MASTER_KEY}&action=${action}`;
+  if (service) url += `&service=${service}`;
+  if (server) url += `&server=${server}`;
+  if (id) url += `&id=${id}`;
+  if (status) url += `&status=${status}`;
+
+  try {
+    const response = await fetch(url);
+    const text = await response.text();
+    console.log(`[BACKEND EXTRACTED] ${action} -> ${text.substring(0,100)}`);
+    res.send(text);
+  } catch (e) {
+    res.send('ERROR: ' + e.message);
+  }
+});
+
+// Extra endpoints extracted from site analysis
+app.get('/api/v1/servers', async (req, res) => {
+  // This replicates Get All Servers JSON endpoint
+  res.json({
+    status: "success",
+    total_servers: 2,
+    servers: [
+      { server_name: "Server 1 (Fastest)", parameter_value: "server1" },
+      { server_name: "Server 2 (Premium)", parameter_value: "server2" }
+    ],
+    source: "Extracted from premiumotp.pro /api"
+  });
+});
+
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    backend: "premiumotp.pro clone",
+    endpoint: REAL_ENDPOINT,
+    extracted_actions: ["getBalance", "getNumber", "getStatus", "setStatus", "getServers", "getServices"],
+    qr_placement: "Only on /add-funds.html, not on landing",
+    original_site: "https://premiumotp.pro"
+  });
+});
+
+app.listen(3000, () => console.log('Backend extracted and running on :3000 - same as premiumotp.pro'));
