@@ -13,7 +13,6 @@ USDT_ADDRESS = "TLwAWcJ7Tm34jqyYqV6qhizQHy8pe7US1V"
 SUPPORT_USERNAME = "just_zevric"
 SUPPORT_LINK = "https://t.me/just_zevric"
 
-# === YOUR PREMIUMOTP.PRO API ===
 API_KEY = os.getenv("API_KEY", "ffcc751480b3c67244ea7123acbeb608")
 API_BASE = "https://premiumotp.pro/api/v1/stark"
 
@@ -84,7 +83,6 @@ COUNTRIES = {
 
 bot = telebot.TeleBot(BOT_TOKEN)
 bot.delete_webhook()
-
 try:
     import qrcode
     QR_OK = True
@@ -94,6 +92,7 @@ except:
 user_selection = {}
 user_numbers = {}
 user_activations = {}
+pending_orders = {}  # uid -> {server_key, info}
 
 def set_commands():
     try:
@@ -106,55 +105,42 @@ def set_commands():
     except: pass
 set_commands()
 
-# === PREMIUMOTP.PRO API FUNCTIONS - ONLY WHATSAPP (wa) ===
 def api_get_balance():
     try:
         url = f"{API_BASE}?api_key={API_KEY}&action=getBalance"
         r = requests.get(url, timeout=10)
-        print(f"Balance: {r.text}")
         return r.text
     except Exception as e:
-        print(f"Balance error: {e}")
         return f"Error: {e}"
 
 def api_buy_number(server_param="server1"):
-    """Buy Whatsapp number - service=wa only"""
     try:
         url = f"{API_BASE}?api_key={API_KEY}&action=getNumber&service=wa&server={server_param}"
         print(f"Buying: {url}")
         r = requests.get(url, timeout=15)
         print(f"Buy Response: {r.text}")
         txt = r.text.strip()
-        # Expected: ACCESS_NUMBER:85749201:+19374678975
         if "ACCESS_NUMBER" in txt:
             parts = txt.split(":")
-            # ACCESS_NUMBER : OrderID : PhoneNumber
             order_id = parts[1]
             phone = parts[2]
             return {"id": order_id, "number": phone, "raw": txt}
         else:
             return {"error": txt}
     except Exception as e:
-        print(f"Buy error: {e}")
         return {"error": str(e)}
 
 def api_get_otp(order_id):
-    """Get OTP - Poll every 5-10 sec"""
     try:
         url = f"{API_BASE}?api_key={API_KEY}&action=getStatus&id={order_id}"
         r = requests.get(url, timeout=10)
-        print(f"OTP Check {order_id}: {r.text}")
         txt = r.text.strip()
         if "STATUS_OK" in txt:
-            # STATUS_OK:456123
             code = txt.split(":")[1]
             return code
-        elif "STATUS_WAIT_CODE" in txt:
-            return None  # Waiting
         else:
             return None
-    except Exception as e:
-        print(f"OTP error: {e}")
+    except:
         return None
 
 def api_cancel(order_id):
@@ -208,17 +194,15 @@ def payment_method_menu(server_key):
 
 @bot.message_handler(commands=['start'])
 def start_handler(message):
-    txt = f"""🔥 <b>ZEVRIC OTP BAZAAR - PREMIUMOTP.PRO AUTO 🤖</b> 🔥
+    txt = f"""🔥 <b>ZEVRIC OTP BAZAAR - SECURE MODE 🔒</b> 🔥
 ━━━━━━━━━━━━━━━━━━━━
-💜 <b>Only WhatsApp Numbers - Full Auto!</b> 💜
+💜 <b>Only WhatsApp - Admin Verified!</b> 💜
 ━━━━━━━━━━━━━━━━━━━━
 🚀 62 Servers - Whatsapp Only ✅
+🔒 Fake Payment Protection ON
 ⚡ API: premiumotp.pro Connected
-💎 Auto Number + Auto OTP
 
-🇮🇳 UPI: <code>{UPI_ID}</code>
-🌍 USDT: <code>{USDT_ADDRESS}</code>
-💰 Starting @ ₹59 / $0.70
+No Auto loss - Admin check ke baad number milega!
 ━━━━━━━━━━━━━━━━━━━━"""
     m = types.InlineKeyboardMarkup(row_width=2)
     m.add(types.InlineKeyboardButton("🛒 Buy Whatsapp Number 🔥", callback_data="buy"), types.InlineKeyboardButton("💰 Balance", callback_data="bal"))
@@ -227,12 +211,13 @@ def start_handler(message):
 
 @bot.message_handler(commands=['buy'])
 def buy_handler(message):
-    bot.send_message(message.chat.id, "📱 <b>SELECT SERVER - ONLY WHATSAPP ✅</b>\n🤖 Auto API Mode - premiumotp.pro", parse_mode="HTML", reply_markup=country_menu(0))
+    bot.send_message(message.chat.id, "📱 <b>SELECT SERVER - ONLY WHATSAPP ✅</b>\n🔒 Secure Mode - Admin will verify payment!", parse_mode="HTML", reply_markup=country_menu(0))
 
 @bot.message_handler(commands=['balance'])
 def balance_handler(message):
+    if message.from_user.id != ADMIN_ID: return
     bal = api_get_balance()
-    bot.send_message(message.chat.id, f"💰 <b>API Balance:</b>\n<code>{bal}</code>\n\nAPI: premiumotp.pro\nKey: {API_KEY[:6]}...", parse_mode="HTML")
+    bot.send_message(message.chat.id, f"💰 Balance: <code>{bal}</code>", parse_mode="HTML")
 
 @bot.callback_query_handler(func=lambda c: True)
 def cb(call):
@@ -248,20 +233,20 @@ def cb(call):
             bot.send_message(call.message.chat.id, f"💰 Balance: <code>{bal}</code>", parse_mode="HTML")
         elif d.startswith("p_"):
             page = int(d.split("_")[1])
-            bot.edit_message_text(f"📱 Page {page+1} - Whatsapp Only", call.message.chat.id, call.message.message_id, parse_mode="HTML", reply_markup=country_menu(page))
+            bot.edit_message_text(f"📱 Page {page+1}", call.message.chat.id, call.message.message_id, parse_mode="HTML", reply_markup=country_menu(page))
         elif d.startswith("c_"):
             key = d[2:]
             info = COUNTRIES.get(key)
             if not info: return
             user_selection[call.from_user.id] = key
-            caption = f"✅ <b>{info['flag']} {info['sname']}</b>\n📱 Service: Whatsapp Only (wa)\n🌍 {info['country']} {info['code']}\n💰 ₹{info['price']} / ${round(info['price']/85,2)}\n💳 Payment Chunno:"
+            caption = f"✅ <b>{info['flag']} {info['sname']}</b>\n📱 Whatsapp Only (wa)\n🌍 {info['country']} {info['code']}\n💰 ₹{info['price']} / ${round(info['price']/85,2)}\n💳 Payment Chunno:"
             bot.edit_message_text(caption, call.message.chat.id, call.message.message_id, parse_mode="HTML", reply_markup=payment_method_menu(key))
         elif d.startswith("payupi_"):
             key = d.split("payupi_")[1]
             info = COUNTRIES.get(key)
             user_selection[call.from_user.id] = key
             qr_path = make_upi_qr(info['price'])
-            caption = f"🇮🇳 <b>UPI - {info['flag']} {info['sname']} (Whatsapp)</b>\n💰 ₹{info['price']}\nUPI: <code>{UPI_ID}</code>\nPay and send screenshot - Bot auto number dega! 🤖"
+            caption = f"🇮🇳 <b>UPI - {info['flag']} {info['sname']} (Whatsapp)</b>\n💰 ₹{info['price']}\nUPI: <code>{UPI_ID}</code>\nPay and send screenshot - Admin verify karega! 🔒"
             mk = types.InlineKeyboardMarkup()
             mk.add(types.InlineKeyboardButton("⬅️ Back", callback_data=f"c_{key}"))
             if qr_path and os.path.exists(qr_path):
@@ -272,50 +257,73 @@ def cb(call):
             info = COUNTRIES.get(key)
             user_selection[call.from_user.id] = key
             qr_path = make_usdt_qr()
-            caption = f"🌍 <b>USDT - {info['flag']} {info['sname']} (Whatsapp)</b>\n💰 ${round(info['price']/85,2)}\n<code>{USDT_ADDRESS}</code>\nPay and send TxID - Bot auto number dega! 🤖"
+            caption = f"🌍 <b>USDT - {info['flag']} {info['sname']} (Whatsapp)</b>\n💰 ${round(info['price']/85,2)}\n<code>{USDT_ADDRESS}</code>\nPay and send TxID - Admin verify karega! 🔒"
             mk = types.InlineKeyboardMarkup()
             mk.add(types.InlineKeyboardButton("⬅️ Back", callback_data=f"c_{key}"))
             if qr_path and os.path.exists(qr_path):
                 with open(qr_path,'rb') as f: bot.send_photo(call.message.chat.id, f, caption=caption, parse_mode="HTML", reply_markup=mk)
             else: bot.send_message(call.message.chat.id, caption, parse_mode="HTML", reply_markup=mk)
+        elif d.startswith("ap_"):
+            # ADMIN APPROVE - NOW BUY FROM API
+            try:
+                uid = int(d.split("_")[1])
+                server_key = d.split("_", 2)[2] if len(d.split("_"))>2 else pending_orders.get(uid, {}).get("key", "server1")
+                info = COUNTRIES.get(server_key) or pending_orders.get(uid, {}).get("info") or {"flag":"🇺🇸","sname":"USA","server":"server1","price":95}
+                
+                bot.answer_callback_query(call.id, "Approving & Buying from API...")
+                bot.edit_message_text(f"✅ Approving {uid}... Buying from premiumotp.pro API... ⏳", call.message.chat.id, call.message.message_id)
+                
+                result = api_buy_number(info.get("server","server1"))
+                if result and result.get("number"):
+                    phone = result["number"]
+                    order_id = result["id"]
+                    user_numbers[uid] = phone
+                    user_activations[uid] = order_id
+                    
+                    mk = types.InlineKeyboardMarkup()
+                    mk.add(types.InlineKeyboardButton("🔑 Get OTP (Auto) - Click Here 👇", callback_data=f"go_{uid}"))
+                    mk.add(types.InlineKeyboardButton("❌ Cancel & Refund", callback_data=f"cancel_{order_id}"))
+                    
+                    txt = f"✅ <b>PAYMENT VERIFIED + WHATSAPP NUMBER! 🎉</b>\n━━━━━━━━━━━━\n{info['flag']} {info['sname']} - Whatsapp Only ✅\n💰 ₹{info['price']}\n📱 Number: <code>{phone}</code>\n🆔 Order: <code>{order_id}</code>\n━━━━━━━━━━━━\n📲 <b>Whatsapp me login karo:</b>\n1️⃣ Number: <code>{phone}</code>\n2️⃣ Get OTP dabao 👇\n🤖 Bot auto OTP dega!"
+                    bot.send_message(uid, txt, parse_mode="HTML", reply_markup=mk)
+                    bot.send_message(call.message.chat.id, f"✅ Auto Delivered to {uid}: {phone} | Order {order_id} | {info['flag']} ₹{info['price']}")
+                else:
+                    err = result.get("error","Unknown") if result else "No response"
+                    bot.send_message(uid, f"⚠️ Admin ne approve kiya but API me number nahi mila!\nError: {err}\n@just_zevric ko bolo, refund/ dusra number milega!")
+                    bot.send_message(call.message.chat.id, f"❌ API Buy Failed for {uid}: {err}")
+            except Exception as e:
+                bot.send_message(call.message.chat.id, f"Approve Error: {e}")
+        elif d.startswith("rj_"):
+            uid = int(d.split("_")[1])
+            bot.send_message(uid, "❌ <b>Payment Rejected!</b>\nAdmin ne fake payment detect kiya! Real screenshot bhejo!", parse_mode="HTML")
+            bot.answer_callback_query(call.id, "Rejected - User informed")
+            bot.edit_message_text(f"❌ Rejected {uid} - Fake payment", call.message.chat.id, call.message.message_id)
         elif d.startswith("go_"):
             uid = int(d.split("_")[1])
             order_id = user_activations.get(uid)
             if not order_id:
                 bot.send_message(uid, "❌ Order ID nahi mila! @just_zevric ko bolo", parse_mode="HTML")
                 return
-            bot.send_message(uid, f"🔍 <b>Checking OTP from premiumotp.pro... 🤖</b>\nOrder: {order_id}\n30 sec wait karo! Polling every 10 sec...", parse_mode="HTML")
+            bot.send_message(uid, f"🔍 <b>Checking OTP... Order {order_id}</b>\n10 sec wait...", parse_mode="HTML")
             otp = None
-            for i in range(12):  # 12 tries = 2 minutes
+            for i in range(12):
                 otp = api_get_otp(order_id)
                 if otp:
                     break
                 time.sleep(10)
-                if i==3:
-                    bot.send_message(uid, "⏳ Abhi wait karo... OTP ka intezar hai... 1 min aur!", parse_mode="HTML")
             if otp:
                 num = user_numbers.get(uid, "")
-                bot.send_message(uid, f"🔑 <b>OTP READY! 🎉 AUTO 🤖</b>\n📱 {num}\n🔐 OTP: <code>{otp}</code>\n\n✅ premiumotp.pro se aaya!\n⚡ Jaldi daalo Whatsapp me!", parse_mode="HTML")
-                bot.send_message(ADMIN_ID, f"✅ Auto OTP delivered: {uid} -> {otp} | Order {order_id} | {num}")
+                bot.send_message(uid, f"🔑 <b>OTP READY! 🎉</b>\n📱 {num}\n🔐 OTP: <code>{otp}</code>\n⚡ Jaldi daalo!", parse_mode="HTML")
+                bot.send_message(ADMIN_ID, f"✅ OTP delivered to {uid}: {otp} | {num}")
             else:
-                bot.send_message(uid, f"⏳ OTP abhi nahi aaya! Order: {order_id}\n1 min baad fir Get OTP dabao 👇\nYa @just_zevric ko bolo\n\nAgar number kaam na kare to /cancel {order_id} se cancel kar sakte ho", parse_mode="HTML")
+                bot.send_message(uid, f"⏳ OTP abhi nahi aaya! Order: {order_id}\n1 min baad fir dabao!", parse_mode="HTML")
             bot.answer_callback_query(call.id, "Checked!")
         elif d.startswith("cancel_"):
             order_id = d.split("_")[1]
             res = api_cancel(order_id)
-            bot.send_message(call.message.chat.id, f"Cancel result for {order_id}: {res}")
+            bot.send_message(call.message.chat.id, f"Cancel {order_id}: {res}")
     except Exception as e:
         print(f"CB Error: {e}")
-
-@bot.message_handler(commands=['cancel'])
-def cancel_handler(message):
-    try:
-        parts = message.text.split()
-        order_id = parts[1]
-        res = api_cancel(order_id)
-        bot.send_message(message.chat.id, f"Cancel {order_id}: {res}")
-    except Exception as e:
-        bot.send_message(message.chat.id, f"Use: /cancel ORDER_ID\nError: {e}")
 
 @bot.message_handler(content_types=['photo'])
 def photo_handler(message):
@@ -325,39 +333,27 @@ def photo_handler(message):
         bot.send_message(message.chat.id, "⚠️ Pehle /buy se server select karo! 📱", parse_mode="HTML")
         return
     info = COUNTRIES[sel]
-    bot.send_message(message.chat.id, f"📸 Screenshot mila! ✅\n🤖 <b>premiumotp.pro se Whatsapp number le raha hu...</b>\n{info['flag']} {info['sname']} - ₹{info['price']}\n5 sec wait karo! ⚡", parse_mode="HTML")
+    pending_orders[uid] = {"key": sel, "info": info}
     
-    result = api_buy_number(info['server'])
-    if result and result.get("number"):
-        phone = result["number"]
-        order_id = result["id"]
-        user_numbers[uid] = phone
-        user_activations[uid] = order_id
-        
-        bot.send_message(ADMIN_ID, f"🤖 <b>AUTO BUY SUCCESS! premiumotp.pro</b>\n{info['flag']} {sel}\nUser: {uid} @{message.from_user.username}\nNumber: {phone}\nOrder ID: {order_id}\nRaw: {result['raw']}", parse_mode="HTML")
-        bot.forward_message(ADMIN_ID, message.chat.id, message.message_id)
-        
-        mk = types.InlineKeyboardMarkup()
-        mk.add(types.InlineKeyboardButton("🔑 Get OTP (Auto) - Click Here 👇", callback_data=f"go_{uid}"))
-        mk.add(types.InlineKeyboardButton("❌ Cancel & Refund", callback_data=f"cancel_{order_id}"))
-        
-        txt = f"✅ <b>PAYMENT APPROVED + WHATSAPP NUMBER AUTO! 🤖🎉</b>\n━━━━━━━━━━━━\n{info['flag']} {info['sname']} - Whatsapp Only ✅\n💰 ₹{info['price']}\n📱 Number: <code>{phone}</code>\n🆔 Order: <code>{order_id}</code>\n━━━━━━━━━━━━\n📲 <b>Ab Whatsapp me login karo:</b>\n1️⃣ Number daalo: <code>{phone}</code>\n2️⃣ Get OTP dabao 👇\n🤖 Bot khud OTP dega premiumotp.pro se!\n━━━━━━━━━━━━\n⚠️ Agar 5 min me OTP na aaye to Cancel dabao!"
-        bot.send_message(uid, txt, parse_mode="HTML", reply_markup=mk)
-    else:
-        err = result.get("error", "Unknown") if result else "No response"
-        bot.send_message(ADMIN_ID, f"❌ <b>AUTO BUY FAILED! premiumotp.pro</b>\n{info['flag']} {sel} for {uid}\nError: {err}\nServer: {info['server']}\nAPI Key: {API_KEY[:6]}...", parse_mode="HTML")
-        bot.forward_message(ADMIN_ID, message.chat.id, message.message_id)
-        
-        if "NO_NUMBERS" in str(err) or "NO_BALANCE" in str(err):
-            bot.send_message(uid, f"⚠️ <b>{info['flag']} {info['sname']} me number khatam ya balance kam hai!</b>\n\nError: <code>{err}</code>\n\nAdmin ko forward kiya, dusra server try karo ya @just_zevric ko bolo!", parse_mode="HTML")
-        else:
-            bot.send_message(uid, f"⚠️ <b>Auto buy failed!</b>\nError: <code>{err}</code>\nAdmin ko forward kiya hai, 2 min me manual number dega! @just_zevric", parse_mode="HTML")
+    # SECURE MODE - NO AUTO BUY, SEND TO ADMIN FOR VERIFICATION
+    username = f"@{message.from_user.username}" if message.from_user.username else "No username"
+    name = message.from_user.first_name or ""
+    
+    txt_admin = f"🔒 <b>NEW ORDER - VERIFY PAYMENT! 🔒</b>\n━━━━━━━━━━━━\n👤 {name} {username}\n🆔 {uid}\n🌍 {info['flag']} {info['sname']}\n💰 ₹{info['price']}\n📱 Whatsapp Only (wa)\nServer Param: {info['server']}\n━━━━━━━━━━━━\n⚠️ <b>Check payment REAL hai ya FAKE?</b>\nAgar real hai to ✅ Approve dabao - tabhi API se number ayega!\nFake hai to ❌ Reject!"
+    bot.send_message(ADMIN_ID, txt_admin, parse_mode="HTML")
+    bot.forward_message(ADMIN_ID, message.chat.id, message.message_id)
+    
+    mk = types.InlineKeyboardMarkup(row_width=2)
+    mk.add(types.InlineKeyboardButton(f"✅ Approve & Auto Buy {info['flag']}", callback_data=f"ap_{uid}_{sel}"), types.InlineKeyboardButton("❌ Reject Fake", callback_data=f"rj_{uid}"))
+    bot.send_message(ADMIN_ID, "👇 Verify & Action Lo:", reply_markup=mk)
+    
+    bot.send_message(message.chat.id, f"📸 Screenshot Received! ✅\n{info['flag']} {info['sname']} - ₹{info['price']}\n🔒 Admin payment verify kar raha hai (30 sec)...\nReal payment hua toh auto number milega! ⚡", parse_mode="HTML")
 
-print("PREMIUMOTP.PRO FULL AUTO - ONLY WHATSAPP - STARTED 🔥🤖")
+print("SECURE BOT - MANUAL VERIFY + AUTO API DELIVERY - STARTED 🔒🤖")
 app = Flask(__name__)
 @app.route('/')
 def home():
-    return "Zevric PremiumOTP.pro Auto Bot - Whatsapp Only Running!"
+    return "Zevric Secure Bot - Whatsapp Only - Manual Verify + Auto API"
 
 def run_web():
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
