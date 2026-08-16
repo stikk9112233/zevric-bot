@@ -1,8 +1,10 @@
 import telebot
 from telebot import types
 import os
+import requests
 from flask import Flask
 import threading
+import time
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "8855823255:AAGe8a9FYnjIJTz2WWncDJ7kenDbLI4YMBE")
 ADMIN_ID = 8981733976
@@ -10,71 +12,74 @@ UPI_ID = "zervicxplay@okhdfcbank"
 USDT_ADDRESS = "TLwAWcJ7Tm34jqyYqV6qhizQHy8pe7US1V"
 SUPPORT_USERNAME = "just_zevric"
 SUPPORT_LINK = "https://t.me/just_zevric"
-BOT_LINK = "https://t.me/zevricotp_bot"
+
+# === YOUR PREMIUMOTP.PRO API ===
+API_KEY = os.getenv("API_KEY", "ffcc751480b3c67244ea7123acbeb608")
+API_BASE = "https://premiumotp.pro/api/v1/stark"
 
 COUNTRIES = {
-    "ARGENTINA_SERVER_1": {"flag": "🇦🇷", "sname": "Argentina server 1", "code": "+54", "price": 95, "country": "Argentina"},
-    "BANGLADESH_SERVER_1": {"flag": "🇧🇩", "sname": "Bangladesh server 1", "code": "+880", "price": 95, "country": "Bangladesh"},
-    "BANGLADESH_SERVER_3": {"flag": "🇧🇩", "sname": "Bangladesh server 3", "code": "+880", "price": 115, "country": "Bangladesh"},
-    "BRAZIL": {"flag": "🇧🇷", "sname": "Brazil", "code": "+55", "price": 190, "country": "Brazil"},
-    "CANADA_SERVER_14": {"flag": "🇨🇦", "sname": "Canada server 14", "code": "+1", "price": 82, "country": "Canada"},
-    "CANADA_SERVER_15": {"flag": "🇨🇦", "sname": "Canada server 15", "code": "+1", "price": 82, "country": "Canada"},
-    "CANADA_SERVER_16": {"flag": "🇨🇦", "sname": "Canada server 16", "code": "+1", "price": 90, "country": "Canada"},
-    "CANADA_SERVER_18": {"flag": "🇨🇦", "sname": "Canada server 18", "code": "+1", "price": 139, "country": "Canada"},
-    "CANADA_SERVER_21": {"flag": "🇨🇦", "sname": "Canada server 21", "code": "+1", "price": 95, "country": "Canada"},
-    "CANADA_SERVER_22": {"flag": "🇨🇦", "sname": "Canada server 22", "code": "+1", "price": 93, "country": "Canada"},
-    "CANADA_SERVER_3": {"flag": "🇨🇦", "sname": "Canada server 3", "code": "+1", "price": 92, "country": "Canada"},
-    "CHILE": {"flag": "🇨🇱", "sname": "Chile", "code": "+56", "price": 75, "country": "Chile"},
-    "CHILE_SERVER_1": {"flag": "🇨🇱", "sname": "Chile server 1", "code": "+56", "price": 68, "country": "Chile"},
-    "CHILE_SERVER_2": {"flag": "🇨🇱", "sname": "Chile server 2", "code": "+56", "price": 80, "country": "Chile"},
-    "COLOMBIA": {"flag": "🇨🇴", "sname": "Colombia", "code": "+57", "price": 75, "country": "Colombia"},
-    "COLOMBIA_SERVER_1": {"flag": "🇨🇴", "sname": "Colombia server 1", "code": "+57", "price": 95, "country": "Colombia"},
-    "COLOMBIA_SERVER_5": {"flag": "🇨🇴", "sname": "Colombia server 5", "code": "+57", "price": 95, "country": "Colombia"},
-    "COLOMBIA_SERVER_8": {"flag": "🇨🇴", "sname": "Colombia server 8", "code": "+57", "price": 82, "country": "Colombia"},
-    "INDIA_SERVER_10": {"flag": "🇮🇳", "sname": "India server 10", "code": "+91", "price": 152, "country": "India"},
-    "INDIA_SERVER_25": {"flag": "🇮🇳", "sname": "India server 25", "code": "+91", "price": 160, "country": "India"},
-    "INDONESIA": {"flag": "🇮🇩", "sname": "Indonesia", "code": "+62", "price": 68, "country": "Indonesia"},
-    "INDONESIA_SERVER_12": {"flag": "🇮🇩", "sname": "Indonesia server 12", "code": "+62", "price": 65, "country": "Indonesia"},
-    "INDONESIA_SERVER_14": {"flag": "🇮🇩", "sname": "Indonesia server 14", "code": "+62", "price": 65, "country": "Indonesia"},
-    "INDONESIA_SERVER_15": {"flag": "🇮🇩", "sname": "Indonesia server 15", "code": "+62", "price": 63, "country": "Indonesia"},
-    "INDONESIA_SERVER_16": {"flag": "🇮🇩", "sname": "Indonesia server 16", "code": "+62", "price": 65, "country": "Indonesia"},
-    "INDONESIA_SERVER_17": {"flag": "🇮🇩", "sname": "Indonesia server 17", "code": "+62", "price": 65, "country": "Indonesia"},
-    "INDONESIA_SERVER_18": {"flag": "🇮🇩", "sname": "Indonesia server 18", "code": "+62", "price": 65, "country": "Indonesia"},
-    "INDONESIA_SERVER_2": {"flag": "🇮🇩", "sname": "Indonesia server 2", "code": "+62", "price": 65, "country": "Indonesia"},
-    "INDONESIA_SERVER_6": {"flag": "🇮🇩", "sname": "Indonesia server 6", "code": "+62", "price": 73, "country": "Indonesia"},
-    "INDONESIA_SERVER_9": {"flag": "🇮🇩", "sname": "Indonesia server 9", "code": "+62", "price": 64, "country": "Indonesia"},
-    "IVORY_COAST": {"flag": "🇨🇮", "sname": "Ivory Coast", "code": "+225", "price": 65, "country": "Ivory Coast"},
-    "KENYA_SERVER_1": {"flag": "🇰🇪", "sname": "Kenya server 1", "code": "+254", "price": 80, "country": "Kenya"},
-    "MALAYSIA_SERVER_1": {"flag": "🇲🇾", "sname": "Malaysia server 1", "code": "+60", "price": 125, "country": "Malaysia"},
-    "MALAYSIA_SERVER_2": {"flag": "🇲🇾", "sname": "Malaysia server 2", "code": "+60", "price": 129, "country": "Malaysia"},
-    "MAURITANIA_SERVER_1": {"flag": "🇲🇷", "sname": "Mauritania server 1", "code": "+222", "price": 80, "country": "Mauritania"},
-    "NEPAL_SERVER_2": {"flag": "🇳🇵", "sname": "Nepal server 2", "code": "+977", "price": 95, "country": "Nepal"},
-    "NETHERLANDS": {"flag": "🇳🇱", "sname": "Netherlands", "code": "+31", "price": 195, "country": "Netherlands"},
-    "PHILIPPINES": {"flag": "🇵🇭", "sname": "Philippines", "code": "+63", "price": 67, "country": "Philippines"},
-    "PHILIPPINES_SERVER_3": {"flag": "🇵🇭", "sname": "Philippines server 3", "code": "+63", "price": 85, "country": "Philippines"},
-    "PHILIPPINES_SERVER_5": {"flag": "🇵🇭", "sname": "Philippines server 5", "code": "+63", "price": 90, "country": "Philippines"},
-    "POLAND_SERVER_1": {"flag": "🇵🇱", "sname": "Poland server 1", "code": "+48", "price": 130, "country": "Poland"},
-    "SAUDI_ARABIA_SERVER_1": {"flag": "🇸🇦", "sname": "Saudi Arabia server 1", "code": "+966", "price": 100, "country": "Saudi Arabia"},
-    "SOUTH_AFRICA": {"flag": "🇿🇦", "sname": "South Africa", "code": "+27", "price": 65, "country": "South Africa"},
-    "SOUTH_AFRICA_SERVER_3": {"flag": "🇿🇦", "sname": "South Africa server 3", "code": "+27", "price": 63, "country": "South Africa"},
-    "SOUTH_AFRICA_SERVER_6": {"flag": "🇿🇦", "sname": "South Africa server 6", "code": "+27", "price": 62, "country": "South Africa"},
-    "SOUTH_AFRICA_SERVER_7": {"flag": "🇿🇦", "sname": "South Africa server 7", "code": "+27", "price": 59, "country": "South Africa"},
-    "SOUTH_AFRICA_SERVER_8": {"flag": "🇿🇦", "sname": "South Africa server 8", "code": "+27", "price": 60, "country": "South Africa"},
-    "THAILAND_SERVER_1": {"flag": "🇹🇭", "sname": "Thailand server 1", "code": "+66", "price": 100, "country": "Thailand"},
-    "THAILAND_SERVER_3": {"flag": "🇹🇭", "sname": "Thailand server 3", "code": "+66", "price": 113, "country": "Thailand"},
-    "USA": {"flag": "🇺🇸", "sname": "USA", "code": "+1", "price": 155, "country": "USA"},
-    "USA_SERVER_0": {"flag": "🇺🇸", "sname": "USA server 0", "code": "+1", "price": 110, "country": "USA"},
-    "USA_SERVER_1": {"flag": "🇺🇸", "sname": "USA server 1", "code": "+1", "price": 239, "country": "USA"},
-    "USA_SERVER_12": {"flag": "🇺🇸", "sname": "USA server 12", "code": "+1", "price": 68, "country": "USA"},
-    "USA_SERVER_17": {"flag": "🇺🇸", "sname": "USA server 17", "code": "+1", "price": 65, "country": "USA"},
-    "USA_SERVER_25": {"flag": "🇺🇸", "sname": "USA server 25", "code": "+1", "price": 100, "country": "USA"},
-    "USA_SERVER_26": {"flag": "🇺🇸", "sname": "USA server 26", "code": "+1", "price": 80, "country": "USA"},
-    "UNITED_KINGDOM": {"flag": "🇬🇧", "sname": "United Kingdom", "code": "+44", "price": 105, "country": "UK"},
-    "UNITED_KINGDOM_SERVER_2": {"flag": "🇬🇧", "sname": "UK server 2", "code": "+44", "price": 145, "country": "UK"},
-    "UZBEKISTAN_SERVER_1": {"flag": "🇺🇿", "sname": "Uzbekistan server 1", "code": "+998", "price": 130, "country": "Uzbekistan"},
-    "VIETNAM_SERVER_1": {"flag": "🇻🇳", "sname": "Vietnam server 1", "code": "+84", "price": 90, "country": "Vietnam"},
-    "VIETNAM_SERVER_2": {"flag": "🇻🇳", "sname": "Vietnam server 2", "code": "+84", "price": 75, "country": "Vietnam"},
-    "YEMEN_SERVER_1": {"flag": "🇾🇪", "sname": "Yemen server 1", "code": "+967", "price": 62, "country": "Yemen"},
+    "ARGENTINA_SERVER_1": {"flag": "🇦🇷", "sname": "Argentina server 1", "code": "+54", "price": 95, "country": "argentina", "server": "server1"},
+    "BANGLADESH_SERVER_1": {"flag": "🇧🇩", "sname": "Bangladesh server 1", "code": "+880", "price": 95, "country": "bangladesh", "server": "server1"},
+    "BANGLADESH_SERVER_3": {"flag": "🇧🇩", "sname": "Bangladesh server 3", "code": "+880", "price": 115, "country": "bangladesh", "server": "server2"},
+    "BRAZIL": {"flag": "🇧🇷", "sname": "Brazil", "code": "+55", "price": 190, "country": "brazil", "server": "server1"},
+    "CANADA_SERVER_14": {"flag": "🇨🇦", "sname": "Canada server 14", "code": "+1", "price": 82, "country": "canada", "server": "server1"},
+    "CANADA_SERVER_15": {"flag": "🇨🇦", "sname": "Canada server 15", "code": "+1", "price": 82, "country": "canada", "server": "server1"},
+    "CANADA_SERVER_16": {"flag": "🇨🇦", "sname": "Canada server 16", "code": "+1", "price": 90, "country": "canada", "server": "server1"},
+    "CANADA_SERVER_18": {"flag": "🇨🇦", "sname": "Canada server 18", "code": "+1", "price": 139, "country": "canada", "server": "server1"},
+    "CANADA_SERVER_21": {"flag": "🇨🇦", "sname": "Canada server 21", "code": "+1", "price": 95, "country": "canada", "server": "server1"},
+    "CANADA_SERVER_22": {"flag": "🇨🇦", "sname": "Canada server 22", "code": "+1", "price": 93, "country": "canada", "server": "server1"},
+    "CANADA_SERVER_3": {"flag": "🇨🇦", "sname": "Canada server 3", "code": "+1", "price": 92, "country": "canada", "server": "server1"},
+    "CHILE": {"flag": "🇨🇱", "sname": "Chile", "code": "+56", "price": 75, "country": "chile", "server": "server1"},
+    "CHILE_SERVER_1": {"flag": "🇨🇱", "sname": "Chile server 1", "code": "+56", "price": 68, "country": "chile", "server": "server1"},
+    "CHILE_SERVER_2": {"flag": "🇨🇱", "sname": "Chile server 2", "code": "+56", "price": 80, "country": "chile", "server": "server1"},
+    "COLOMBIA": {"flag": "🇨🇴", "sname": "Colombia", "code": "+57", "price": 75, "country": "colombia", "server": "server1"},
+    "COLOMBIA_SERVER_1": {"flag": "🇨🇴", "sname": "Colombia server 1", "code": "+57", "price": 95, "country": "colombia", "server": "server1"},
+    "COLOMBIA_SERVER_5": {"flag": "🇨🇴", "sname": "Colombia server 5", "code": "+57", "price": 95, "country": "colombia", "server": "server1"},
+    "COLOMBIA_SERVER_8": {"flag": "🇨🇴", "sname": "Colombia server 8", "code": "+57", "price": 82, "country": "colombia", "server": "server1"},
+    "INDIA_SERVER_10": {"flag": "🇮🇳", "sname": "India server 10", "code": "+91", "price": 152, "country": "india", "server": "server1"},
+    "INDIA_SERVER_25": {"flag": "🇮🇳", "sname": "India server 25", "code": "+91", "price": 160, "country": "india", "server": "server1"},
+    "INDONESIA": {"flag": "🇮🇩", "sname": "Indonesia", "code": "+62", "price": 68, "country": "indonesia", "server": "server1"},
+    "INDONESIA_SERVER_12": {"flag": "🇮🇩", "sname": "Indonesia server 12", "code": "+62", "price": 65, "country": "indonesia", "server": "server1"},
+    "INDONESIA_SERVER_14": {"flag": "🇮🇩", "sname": "Indonesia server 14", "code": "+62", "price": 65, "country": "indonesia", "server": "server1"},
+    "INDONESIA_SERVER_15": {"flag": "🇮🇩", "sname": "Indonesia server 15", "code": "+62", "price": 63, "country": "indonesia", "server": "server1"},
+    "INDONESIA_SERVER_16": {"flag": "🇮🇩", "sname": "Indonesia server 16", "code": "+62", "price": 65, "country": "indonesia", "server": "server1"},
+    "INDONESIA_SERVER_17": {"flag": "🇮🇩", "sname": "Indonesia server 17", "code": "+62", "price": 65, "country": "indonesia", "server": "server1"},
+    "INDONESIA_SERVER_18": {"flag": "🇮🇩", "sname": "Indonesia server 18", "code": "+62", "price": 65, "country": "indonesia", "server": "server1"},
+    "INDONESIA_SERVER_2": {"flag": "🇮🇩", "sname": "Indonesia server 2", "code": "+62", "price": 65, "country": "indonesia", "server": "server1"},
+    "INDONESIA_SERVER_6": {"flag": "🇮🇩", "sname": "Indonesia server 6", "code": "+62", "price": 73, "country": "indonesia", "server": "server1"},
+    "INDONESIA_SERVER_9": {"flag": "🇮🇩", "sname": "Indonesia server 9", "code": "+62", "price": 64, "country": "indonesia", "server": "server1"},
+    "IVORY_COAST": {"flag": "🇨🇮", "sname": "Ivory Coast", "code": "+225", "price": 65, "country": "ivorycoast", "server": "server1"},
+    "KENYA_SERVER_1": {"flag": "🇰🇪", "sname": "Kenya server 1", "code": "+254", "price": 80, "country": "kenya", "server": "server1"},
+    "MALAYSIA_SERVER_1": {"flag": "🇲🇾", "sname": "Malaysia server 1", "code": "+60", "price": 125, "country": "malaysia", "server": "server1"},
+    "MALAYSIA_SERVER_2": {"flag": "🇲🇾", "sname": "Malaysia server 2", "code": "+60", "price": 129, "country": "malaysia", "server": "server1"},
+    "MAURITANIA_SERVER_1": {"flag": "🇲🇷", "sname": "Mauritania server 1", "code": "+222", "price": 80, "country": "mauritania", "server": "server1"},
+    "NEPAL_SERVER_2": {"flag": "🇳🇵", "sname": "Nepal server 2", "code": "+977", "price": 95, "country": "nepal", "server": "server1"},
+    "NETHERLANDS": {"flag": "🇳🇱", "sname": "Netherlands", "code": "+31", "price": 195, "country": "netherlands", "server": "server1"},
+    "PHILIPPINES": {"flag": "🇵🇭", "sname": "Philippines", "code": "+63", "price": 67, "country": "philippines", "server": "server1"},
+    "PHILIPPINES_SERVER_3": {"flag": "🇵🇭", "sname": "Philippines server 3", "code": "+63", "price": 85, "country": "philippines", "server": "server1"},
+    "PHILIPPINES_SERVER_5": {"flag": "🇵🇭", "sname": "Philippines server 5", "code": "+63", "price": 90, "country": "philippines", "server": "server1"},
+    "POLAND_SERVER_1": {"flag": "🇵🇱", "sname": "Poland server 1", "code": "+48", "price": 130, "country": "poland", "server": "server1"},
+    "SAUDI_ARABIA_SERVER_1": {"flag": "🇸🇦", "sname": "Saudi Arabia server 1", "code": "+966", "price": 100, "country": "saudiarabia", "server": "server1"},
+    "SOUTH_AFRICA": {"flag": "🇿🇦", "sname": "South Africa", "code": "+27", "price": 65, "country": "southafrica", "server": "server1"},
+    "SOUTH_AFRICA_SERVER_3": {"flag": "🇿🇦", "sname": "South Africa server 3", "code": "+27", "price": 63, "country": "southafrica", "server": "server1"},
+    "SOUTH_AFRICA_SERVER_6": {"flag": "🇿🇦", "sname": "South Africa server 6", "code": "+27", "price": 62, "country": "southafrica", "server": "server1"},
+    "SOUTH_AFRICA_SERVER_7": {"flag": "🇿🇦", "sname": "South Africa server 7", "code": "+27", "price": 59, "country": "southafrica", "server": "server1"},
+    "SOUTH_AFRICA_SERVER_8": {"flag": "🇿🇦", "sname": "South Africa server 8", "code": "+27", "price": 60, "country": "southafrica", "server": "server1"},
+    "THAILAND_SERVER_1": {"flag": "🇹🇭", "sname": "Thailand server 1", "code": "+66", "price": 100, "country": "thailand", "server": "server1"},
+    "THAILAND_SERVER_3": {"flag": "🇹🇭", "sname": "Thailand server 3", "code": "+66", "price": 113, "country": "thailand", "server": "server1"},
+    "USA": {"flag": "🇺🇸", "sname": "USA", "code": "+1", "price": 155, "country": "usa", "server": "server1"},
+    "USA_SERVER_0": {"flag": "🇺🇸", "sname": "USA server 0", "code": "+1", "price": 110, "country": "usa", "server": "server1"},
+    "USA_SERVER_1": {"flag": "🇺🇸", "sname": "USA server 1", "code": "+1", "price": 239, "country": "usa", "server": "server1"},
+    "USA_SERVER_12": {"flag": "🇺🇸", "sname": "USA server 12", "code": "+1", "price": 68, "country": "usa", "server": "server1"},
+    "USA_SERVER_17": {"flag": "🇺🇸", "sname": "USA server 17", "code": "+1", "price": 65, "country": "usa", "server": "server1"},
+    "USA_SERVER_25": {"flag": "🇺🇸", "sname": "USA server 25", "code": "+1", "price": 100, "country": "usa", "server": "server1"},
+    "USA_SERVER_26": {"flag": "🇺🇸", "sname": "USA server 26", "code": "+1", "price": 80, "country": "usa", "server": "server1"},
+    "UNITED_KINGDOM": {"flag": "🇬🇧", "sname": "United Kingdom", "code": "+44", "price": 105, "country": "england", "server": "server1"},
+    "UNITED_KINGDOM_SERVER_2": {"flag": "🇬🇧", "sname": "UK server 2", "code": "+44", "price": 145, "country": "england", "server": "server1"},
+    "UZBEKISTAN_SERVER_1": {"flag": "🇺🇿", "sname": "Uzbekistan server 1", "code": "+998", "price": 130, "country": "uzbekistan", "server": "server1"},
+    "VIETNAM_SERVER_1": {"flag": "🇻🇳", "sname": "Vietnam server 1", "code": "+84", "price": 90, "country": "vietnam", "server": "server1"},
+    "VIETNAM_SERVER_2": {"flag": "🇻🇳", "sname": "Vietnam server 2", "code": "+84", "price": 75, "country": "vietnam", "server": "server1"},
+    "YEMEN_SERVER_1": {"flag": "🇾🇪", "sname": "Yemen server 1", "code": "+967", "price": 62, "country": "yemen", "server": "server1"},
 }
 
 bot = telebot.TeleBot(BOT_TOKEN)
@@ -86,29 +91,78 @@ try:
 except:
     QR_OK = False
 
+user_selection = {}
+user_numbers = {}
+user_activations = {}
+
 def set_commands():
     try:
         bot.delete_my_commands()
         bot.delete_my_commands(scope=types.BotCommandScopeAllPrivateChats())
-        bot.delete_my_commands(scope=types.BotCommandScopeAllGroupChats())
     except: pass
     try:
-        cmds = [
-            types.BotCommand("start", "🔥 ZEVRIC OTP BAZAAR - Main Menu"),
-            types.BotCommand("buy", "🛒 Buy Number - 62 Servers"),
-            types.BotCommand("pricelist", "💰 Full Pricelist A-Z"),
-            types.BotCommand("support", "📞 Support @just_zevric"),
-            types.BotCommand("howtobuy", "📜 How To Buy Guide"),
-        ]
+        cmds = [types.BotCommand("start", "🔥 ZEVRIC OTP BAZAAR"), types.BotCommand("buy", "🛒 Buy Whatsapp Number"), types.BotCommand("balance", "💰 Check API Balance")]
         bot.set_my_commands(cmds)
-        bot.set_my_commands(cmds, scope=types.BotCommandScopeAllPrivateChats())
-    except Exception as e:
-        print(f"Command set error: {e}")
-
+    except: pass
 set_commands()
 
-user_selection = {}
-user_numbers = {}
+# === PREMIUMOTP.PRO API FUNCTIONS - ONLY WHATSAPP (wa) ===
+def api_get_balance():
+    try:
+        url = f"{API_BASE}?api_key={API_KEY}&action=getBalance"
+        r = requests.get(url, timeout=10)
+        print(f"Balance: {r.text}")
+        return r.text
+    except Exception as e:
+        print(f"Balance error: {e}")
+        return f"Error: {e}"
+
+def api_buy_number(server_param="server1"):
+    """Buy Whatsapp number - service=wa only"""
+    try:
+        url = f"{API_BASE}?api_key={API_KEY}&action=getNumber&service=wa&server={server_param}"
+        print(f"Buying: {url}")
+        r = requests.get(url, timeout=15)
+        print(f"Buy Response: {r.text}")
+        txt = r.text.strip()
+        # Expected: ACCESS_NUMBER:85749201:+19374678975
+        if "ACCESS_NUMBER" in txt:
+            parts = txt.split(":")
+            # ACCESS_NUMBER : OrderID : PhoneNumber
+            order_id = parts[1]
+            phone = parts[2]
+            return {"id": order_id, "number": phone, "raw": txt}
+        else:
+            return {"error": txt}
+    except Exception as e:
+        print(f"Buy error: {e}")
+        return {"error": str(e)}
+
+def api_get_otp(order_id):
+    """Get OTP - Poll every 5-10 sec"""
+    try:
+        url = f"{API_BASE}?api_key={API_KEY}&action=getStatus&id={order_id}"
+        r = requests.get(url, timeout=10)
+        print(f"OTP Check {order_id}: {r.text}")
+        txt = r.text.strip()
+        if "STATUS_OK" in txt:
+            # STATUS_OK:456123
+            code = txt.split(":")[1]
+            return code
+        elif "STATUS_WAIT_CODE" in txt:
+            return None  # Waiting
+        else:
+            return None
+    except Exception as e:
+        print(f"OTP error: {e}")
+        return None
+
+def api_cancel(order_id):
+    try:
+        url = f"{API_BASE}?api_key={API_KEY}&action=setStatus&id={order_id}&status=8"
+        r = requests.get(url, timeout=10)
+        return r.text
+    except: return None
 
 def make_upi_qr(amount):
     if not QR_OK: return None
@@ -147,304 +201,163 @@ def country_menu(page=0):
     return mk
 
 def payment_method_menu(server_key):
-    # After selecting server, choose payment method - with BACK
     mk = types.InlineKeyboardMarkup(row_width=2)
-    mk.add(
-        types.InlineKeyboardButton("🇮🇳 BUY with UPI", callback_data=f"payupi_{server_key}"),
-        types.InlineKeyboardButton("🌍 BUY with USDT", callback_data=f"payusdt_{server_key}")
-    )
+    mk.add(types.InlineKeyboardButton("🇮🇳 BUY with UPI", callback_data=f"payupi_{server_key}"), types.InlineKeyboardButton("🌍 BUY with USDT", callback_data=f"payusdt_{server_key}"))
     mk.add(types.InlineKeyboardButton("⬅️ Back to Servers", callback_data="buy"))
-    mk.add(types.InlineKeyboardButton("🔙 Main Menu 🏠", callback_data="main"))
     return mk
-
-def retention_menu():
-    mk = types.InlineKeyboardMarkup(row_width=2)
-    mk.add(
-        types.InlineKeyboardButton("🛒 Buy Again 10% OFF 🔥", callback_data="buy"),
-        types.InlineKeyboardButton("💰 Pricelist", callback_data="plist"),
-    )
-    mk.add(
-        types.InlineKeyboardButton("📤 Share & Earn ₹20", callback_data="share"),
-        types.InlineKeyboardButton("⭐ Rate Us 5 Star", callback_data="rate")
-    )
-    mk.add(types.InlineKeyboardButton("📞 Support @just_zevric", url=SUPPORT_LINK))
-    return mk
-
-def welcome_text():
-    return """🔥 <b>ZEVRIC OTP BAZAAR</b> 🔥
-━━━━━━━━━━━━━━━━━━━━
-💜 <b>Welcome to Premium OTP Store!</b> 💜
-━━━━━━━━━━━━━━━━━━━━
-🚀 62 Premium Servers Worldwide 🌍
-⚡ Instant Delivery | ✅ 100% Working
-💎 Trusted by 10K+ Users
-
-🎁 <b>Special Features:</b>
-🇮🇳 India UPI | 🌍 Worldwide USDT (TRC20)
-🇺🇸 USA | 🇬🇧 UK | 🇨🇦 Canada & 15+ Countries
-
-💰 <b>Starting @ ₹59 / $0.70 Only!</b>
-━━━━━━━━━━━━━━━━━━━━
-👇 <b>Select Karo & Start Karo:</b>"""
 
 @bot.message_handler(commands=['start'])
 def start_handler(message):
-    txt = welcome_text()
+    txt = f"""🔥 <b>ZEVRIC OTP BAZAAR - PREMIUMOTP.PRO AUTO 🤖</b> 🔥
+━━━━━━━━━━━━━━━━━━━━
+💜 <b>Only WhatsApp Numbers - Full Auto!</b> 💜
+━━━━━━━━━━━━━━━━━━━━
+🚀 62 Servers - Whatsapp Only ✅
+⚡ API: premiumotp.pro Connected
+💎 Auto Number + Auto OTP
+
+🇮🇳 UPI: <code>{UPI_ID}</code>
+🌍 USDT: <code>{USDT_ADDRESS}</code>
+💰 Starting @ ₹59 / $0.70
+━━━━━━━━━━━━━━━━━━━━"""
     m = types.InlineKeyboardMarkup(row_width=2)
-    m.add(
-        types.InlineKeyboardButton("🛒 Buy Number 🔥", callback_data="buy"),
-        types.InlineKeyboardButton("💰 Pricelist 💎", callback_data="plist"),
-    )
-    m.add(
-        types.InlineKeyboardButton("📞 Support", url=SUPPORT_LINK),
-        types.InlineKeyboardButton("📜 How To Buy", callback_data="how")
-    )
-    m.add(types.InlineKeyboardButton("🌍 All 62 Servers", callback_data="buy"))
-    try:
-        logo_path = "/mnt/data/image_B4075E28-65DF-48F7-90AC-A09C515A1A5D.jpeg"
-        if os.path.exists(logo_path):
-            with open(logo_path, 'rb') as f:
-                bot.send_photo(message.chat.id, f, caption=txt, parse_mode="HTML", reply_markup=m)
-        else:
-            bot.send_message(message.chat.id, txt, parse_mode="HTML", reply_markup=m)
-    except:
-        bot.send_message(message.chat.id, txt, parse_mode="HTML", reply_markup=m)
+    m.add(types.InlineKeyboardButton("🛒 Buy Whatsapp Number 🔥", callback_data="buy"), types.InlineKeyboardButton("💰 Balance", callback_data="bal"))
+    m.add(types.InlineKeyboardButton("📞 Support", url=SUPPORT_LINK))
+    bot.send_message(message.chat.id, txt, parse_mode="HTML", reply_markup=m)
 
 @bot.message_handler(commands=['buy'])
 def buy_handler(message):
-    bot.send_message(message.chat.id, "🌍 <b>SELECT SERVER - 62 Options! 🔥</b>\n💜 Premium Quality Numbers 💜\n👇 Select Karo:", parse_mode="HTML", reply_markup=country_menu(0))
+    bot.send_message(message.chat.id, "📱 <b>SELECT SERVER - ONLY WHATSAPP ✅</b>\n🤖 Auto API Mode - premiumotp.pro", parse_mode="HTML", reply_markup=country_menu(0))
 
-@bot.message_handler(commands=['pricelist','price'])
-def plist_handler(message):
-    text = "💰 <b>ZEVRIC OTP BAZAAR - FULL PRICELIST 🔥</b>\n━━━━━━━━━━━━━━━━━━━━\n"
-    for d in COUNTRIES.values():
-        text += f"{d['flag']} {d['sname']} {d['code']} = ₹{d['price']} / ${round(d['price']/85,2)} ✅\n"
-    text += f"━━━━━━━━━━━━━━━━━━━━\n💳 UPI: <code>{UPI_ID}</code>\n🌍 USDT TRC20: <code>{USDT_ADDRESS}</code>\n📞 Support: @{SUPPORT_USERNAME}\n⚡ Instant Delivery!"
-    for i in range(0, len(text), 4000):
-        bot.send_message(message.chat.id, text[i:i+4000], parse_mode="HTML")
-
-@bot.message_handler(commands=['support','help'])
-def support_handler(message):
-    txt = f"""📞 <b>SUPPORT - ZEVRIC OTP BAZAAR 💜</b>
-━━━━━━━━━━━━━━━━━━━━
-👤 Admin: @{SUPPORT_USERNAME}
-🔗 Link: {SUPPORT_LINK}
-⚡ Reply Time: 2-5 Minutes
-
-💬 <b>Kisi bhi issue ke liye direct message karo!</b>
-💰 Payment Issue? Number Issue? OTP Issue?
-📞 Turant Help Milegi!
-
-━━━━━━━━━━━━━━━━━━━━"""
-    mk = types.InlineKeyboardMarkup()
-    mk.add(types.InlineKeyboardButton("📞 Contact Support @just_zevric", url=SUPPORT_LINK))
-    mk.add(types.InlineKeyboardButton("🛒 Buy Number", callback_data="buy"))
-    bot.send_message(message.chat.id, txt, parse_mode="HTML", reply_markup=mk)
-
-@bot.message_handler(commands=['howtobuy','how','guide'])
-def howtobuy_handler(message):
-    txt = f"""📜 <b>HOW TO BUY - ZEVRIC OTP BAZAAR 🔥</b>
-━━━━━━━━━━━━━━━━━━━━
-💜 <b>Step By Step Guide:</b>
-
-1️⃣ /buy dabao 🛒
-2️⃣ Server select karo (62 options) 🌍
-3️⃣ Payment select karo:
-   🇮🇳 UPI - India ke liye
-   🌍 USDT TRC20 - Worldwide ke liye
-4️⃣ QR Code ayega - Pay karo 💳
-   UPI: <code>{UPI_ID}</code>
-   USDT: <code>{USDT_ADDRESS}</code>
-5️⃣ Screenshot / TxID bhejo 📸
-6️⃣ Admin 2 min me Approve karega ✅
-7️⃣ Number milega: +1623456783 📱
-8️⃣ Whatsapp me login karo 🔑
-9️⃣ Get OTP dabao 👇
-🔟 OTP milega! 🎉
-
-━━━━━━━━━━━━━━━━━━━━
-💰 <b>Price:</b> ₹59 / $0.70 se start
-🌍 <b>62 Servers</b> | ⚡ <b>Instant Delivery</b>
-✅ <b>100% Working</b>
-
-📞 <b>Support:</b> @just_zevric
-━━━━━━━━━━━━━━━━━━━━"""
-    mk = types.InlineKeyboardMarkup(row_width=2)
-    mk.add(
-        types.InlineKeyboardButton("🛒 Buy Now 🔥", callback_data="buy"),
-        types.InlineKeyboardButton("💰 Pricelist", callback_data="plist"),
-    )
-    mk.add(types.InlineKeyboardButton("📞 Support", url=SUPPORT_LINK))
-    bot.send_message(message.chat.id, txt, parse_mode="HTML", reply_markup=mk)
+@bot.message_handler(commands=['balance'])
+def balance_handler(message):
+    bal = api_get_balance()
+    bot.send_message(message.chat.id, f"💰 <b>API Balance:</b>\n<code>{bal}</code>\n\nAPI: premiumotp.pro\nKey: {API_KEY[:6]}...", parse_mode="HTML")
 
 @bot.callback_query_handler(func=lambda c: True)
 def cb(call):
     try:
         d = call.data
         if d == "main":
-            try: bot.delete_message(call.message.chat.id, call.message.message_id)
-            except: pass
             start_handler(call.message)
         elif d == "buy":
-            try:
-                bot.edit_message_text("🌍 <b>SELECT SERVER A-Z - 62 Servers 🔥</b>\n💜 Premium Quality 💜\n👇 Server select karo phir UPI/USDT chunna:", call.message.chat.id, call.message.message_id, parse_mode="HTML", reply_markup=country_menu(0))
-            except:
-                bot.send_message(call.message.chat.id, "🌍 <b>SELECT SERVER - 62 Options! 🔥</b>", parse_mode="HTML", reply_markup=country_menu(0))
-        elif d == "plist":
-            plist_handler(call.message)
-        elif d == "how":
-            howtobuy_handler(call.message)
-        elif d == "share":
-            bot.send_message(call.message.chat.id, f"📤 <b>SHARE & EARN ₹20 🔥</b>\n━━━━━━━━━━━━\n👥 Dost ko bot share karo:\n🔗 <code>{BOT_LINK}</code>\n\n💰 Har referral pe ₹20 discount!\n📞 Support: @{SUPPORT_USERNAME}\n\nShare karo aur kamao! 🚀", parse_mode="HTML")
-        elif d == "rate":
-            bot.send_message(call.message.chat.id, "⭐ <b>RATE US 5 STAR ⭐</b>\n━━━━━━━━━━━━\n🙏 Agar service pasand aayi ho to\n⭐ 5 Star de do!\n\n📸 Screenshot bhejo support pe @just_zevric\n🎁 Next order pe 10% OFF milega! Code: ZEVRIC10\n\nThank you! 🔥❤️", parse_mode="HTML")
+            bot.edit_message_text("📱 <b>SELECT SERVER - Whatsapp Only ✅</b>", call.message.chat.id, call.message.message_id, parse_mode="HTML", reply_markup=country_menu(0))
+        elif d == "bal":
+            bal = api_get_balance()
+            bot.answer_callback_query(call.id, f"Balance: {bal}")
+            bot.send_message(call.message.chat.id, f"💰 Balance: <code>{bal}</code>", parse_mode="HTML")
         elif d.startswith("p_"):
             page = int(d.split("_")[1])
-            bot.edit_message_text(f"🌍 <b>Page {page+1} - Select Server 🔥</b>\n💜 Premium Quality 💜", call.message.chat.id, call.message.message_id, parse_mode="HTML", reply_markup=country_menu(page))
+            bot.edit_message_text(f"📱 Page {page+1} - Whatsapp Only", call.message.chat.id, call.message.message_id, parse_mode="HTML", reply_markup=country_menu(page))
         elif d.startswith("c_"):
-            # NEW: Show payment method selection first - with BACK
             key = d[2:]
             info = COUNTRIES.get(key)
             if not info: return
             user_selection[call.from_user.id] = key
-            bot.answer_callback_query(call.id, f"{info['sname']} selected! 💜")
-            caption = f"✅ <b>{info['flag']} {info['sname']} Selected!</b>\n━━━━━━━━━━━━━━━━━━━━\n🌍 Country: {info['country']} {info['code']}\n💰 Price: <b>₹{info['price']} / ${round(info['price']/85,2)}</b> ✅\n━━━━━━━━━━━━━━━━━━━━\n💳 <b>Payment Method Chunno:</b>\n🇮🇳 UPI - India ke liye\n🌍 USDT TRC20 - Worldwide ke liye\n━━━━━━━━━━━━━━━━━━━━"
+            caption = f"✅ <b>{info['flag']} {info['sname']}</b>\n📱 Service: Whatsapp Only (wa)\n🌍 {info['country']} {info['code']}\n💰 ₹{info['price']} / ${round(info['price']/85,2)}\n💳 Payment Chunno:"
             bot.edit_message_text(caption, call.message.chat.id, call.message.message_id, parse_mode="HTML", reply_markup=payment_method_menu(key))
-        
         elif d.startswith("payupi_"):
             key = d.split("payupi_")[1]
             info = COUNTRIES.get(key)
-            if not info: return
             user_selection[call.from_user.id] = key
             qr_path = make_upi_qr(info['price'])
-            caption = f"🇮🇳 <b>UPI PAYMENT - {info['flag']} {info['sname']}</b> 🇮🇳\n━━━━━━━━━━━━━━━━━━━━\n🌍 {info['country']} {info['code']}\n💰 Price: <b>₹{info['price']}</b> ✅\n💳 UPI: <code>{UPI_ID}</code>\n━━━━━━━━━━━━━━━━━━━━\n💸 <b>₹{info['price']} pay karo aur screenshot bhejo 📸</b>\n⚡ Instant Delivery!\n\nScan QR and Pay 💜"
+            caption = f"🇮🇳 <b>UPI - {info['flag']} {info['sname']} (Whatsapp)</b>\n💰 ₹{info['price']}\nUPI: <code>{UPI_ID}</code>\nPay and send screenshot - Bot auto number dega! 🤖"
             mk = types.InlineKeyboardMarkup()
-            mk.add(types.InlineKeyboardButton("📞 Support @just_zevric", url=SUPPORT_LINK))
-            mk.add(
-                types.InlineKeyboardButton("🌍 Switch to USDT", callback_data=f"payusdt_{key}"),
-                types.InlineKeyboardButton("⬅️ Back", callback_data=f"c_{key}")
-            )
-            mk.add(types.InlineKeyboardButton("🔙 Main Menu 🏠", callback_data="main"))
+            mk.add(types.InlineKeyboardButton("⬅️ Back", callback_data=f"c_{key}"))
             if qr_path and os.path.exists(qr_path):
-                with open(qr_path,'rb') as f:
-                    bot.send_photo(call.message.chat.id, f, caption=caption, parse_mode="HTML", reply_markup=mk)
-            else:
-                bot.send_message(call.message.chat.id, caption, parse_mode="HTML", reply_markup=mk)
-        
+                with open(qr_path,'rb') as f: bot.send_photo(call.message.chat.id, f, caption=caption, parse_mode="HTML", reply_markup=mk)
+            else: bot.send_message(call.message.chat.id, caption, parse_mode="HTML", reply_markup=mk)
         elif d.startswith("payusdt_"):
             key = d.split("payusdt_")[1]
             info = COUNTRIES.get(key)
-            if not info: return
             user_selection[call.from_user.id] = key
             qr_path = make_usdt_qr()
-            usd_price = round(info['price']/85,2)
-            caption = f"🌍 <b>USDT PAYMENT - {info['flag']} {info['sname']}</b> 🌍\n━━━━━━━━━━━━━━━━━━━━\n🌍 {info['country']} {info['code']}\n💰 Price: <b>${usd_price} USDT (₹{info['price']})</b> ✅\n💳 Network: <b>TRON (TRC20)</b>\n📬 Address: <code>{USDT_ADDRESS}</code>\n━━━━━━━━━━━━━━━━━━━━\n💸 <b>${usd_price} USDT pay karo aur TxID bhejo 📸</b>\n⚠️ Only TRON network! BEP20/ERC20 = Lost\n⚡ Instant Delivery!\n\nScan QR and Pay 💜"
+            caption = f"🌍 <b>USDT - {info['flag']} {info['sname']} (Whatsapp)</b>\n💰 ${round(info['price']/85,2)}\n<code>{USDT_ADDRESS}</code>\nPay and send TxID - Bot auto number dega! 🤖"
             mk = types.InlineKeyboardMarkup()
-            mk.add(types.InlineKeyboardButton("📞 Support @just_zevric", url=SUPPORT_LINK))
-            mk.add(
-                types.InlineKeyboardButton("🇮🇳 Switch to UPI", callback_data=f"payupi_{key}"),
-                types.InlineKeyboardButton("⬅️ Back", callback_data=f"c_{key}")
-            )
-            mk.add(types.InlineKeyboardButton("🔙 Main Menu 🏠", callback_data="main"))
+            mk.add(types.InlineKeyboardButton("⬅️ Back", callback_data=f"c_{key}"))
             if qr_path and os.path.exists(qr_path):
-                with open(qr_path,'rb') as f:
-                    bot.send_photo(call.message.chat.id, f, caption=caption, parse_mode="HTML", reply_markup=mk)
-            else:
-                bot.send_message(call.message.chat.id, caption, parse_mode="HTML", reply_markup=mk)
-
-        elif d.startswith("ap_"):
-            uid = int(d.split("_")[1])
-            key = d.split("_",2)[2] if len(d.split("_",2))>2 else ""
-            info = COUNTRIES.get(key, {"sname":"Server","flag":"✅","price":0,"country":""})
-            bot.send_message(call.message.chat.id, f"✅ <b>Approved User {uid} - {info['flag']} {info['country']}</b>\n\nAb number do:\n<code>/number {uid} +91XXXXXXXXXX</code>", parse_mode="HTML")
-            bot.send_message(uid, f"✅ <b>Payment Approved! 🎉</b>\n\n{info['flag']} {info['sname']} Approved ✅\n💰 ₹{info['price']}\n\n📱 Admin number bhej raha hai... ⏳", parse_mode="HTML")
-        elif d.startswith("rj_"):
-            uid = int(d.split("_")[1])
-            bot.send_message(uid, "❌ <b>Payment Rejected! ❌</b>\nSahi amount pay karo aur screenshot bhejo!\n📞 Support: @just_zevric", parse_mode="HTML")
-            bot.answer_callback_query(call.id, "Rejected!")
+                with open(qr_path,'rb') as f: bot.send_photo(call.message.chat.id, f, caption=caption, parse_mode="HTML", reply_markup=mk)
+            else: bot.send_message(call.message.chat.id, caption, parse_mode="HTML", reply_markup=mk)
         elif d.startswith("go_"):
             uid = int(d.split("_")[1])
-            num = user_numbers.get(uid, "Unknown")
-            bot.send_message(ADMIN_ID, f"🔑 <b>OTP REQUEST! 🔥</b>\n\n👤 User: <code>{uid}</code>\n📱 Number: <code>{num}</code>\n\nUser ne Whatsapp me login kiya hai, OTP bhej do:\n<code>/otp {uid} 123456</code>", parse_mode="HTML")
-            bot.send_message(uid, "🔑 OTP Request sent to Admin! 1 min wait karo ⏳🚀\nAdmin OTP bhejega jaldi!", parse_mode="HTML")
-            bot.answer_callback_query(call.id, "OTP Request Sent! 🚀")
+            order_id = user_activations.get(uid)
+            if not order_id:
+                bot.send_message(uid, "❌ Order ID nahi mila! @just_zevric ko bolo", parse_mode="HTML")
+                return
+            bot.send_message(uid, f"🔍 <b>Checking OTP from premiumotp.pro... 🤖</b>\nOrder: {order_id}\n30 sec wait karo! Polling every 10 sec...", parse_mode="HTML")
+            otp = None
+            for i in range(12):  # 12 tries = 2 minutes
+                otp = api_get_otp(order_id)
+                if otp:
+                    break
+                time.sleep(10)
+                if i==3:
+                    bot.send_message(uid, "⏳ Abhi wait karo... OTP ka intezar hai... 1 min aur!", parse_mode="HTML")
+            if otp:
+                num = user_numbers.get(uid, "")
+                bot.send_message(uid, f"🔑 <b>OTP READY! 🎉 AUTO 🤖</b>\n📱 {num}\n🔐 OTP: <code>{otp}</code>\n\n✅ premiumotp.pro se aaya!\n⚡ Jaldi daalo Whatsapp me!", parse_mode="HTML")
+                bot.send_message(ADMIN_ID, f"✅ Auto OTP delivered: {uid} -> {otp} | Order {order_id} | {num}")
+            else:
+                bot.send_message(uid, f"⏳ OTP abhi nahi aaya! Order: {order_id}\n1 min baad fir Get OTP dabao 👇\nYa @just_zevric ko bolo\n\nAgar number kaam na kare to /cancel {order_id} se cancel kar sakte ho", parse_mode="HTML")
+            bot.answer_callback_query(call.id, "Checked!")
+        elif d.startswith("cancel_"):
+            order_id = d.split("_")[1]
+            res = api_cancel(order_id)
+            bot.send_message(call.message.chat.id, f"Cancel result for {order_id}: {res}")
     except Exception as e:
         print(f"CB Error: {e}")
 
-@bot.message_handler(commands=['number','give','num'])
-def give_num(message):
-    if message.from_user.id != ADMIN_ID: return
+@bot.message_handler(commands=['cancel'])
+def cancel_handler(message):
     try:
         parts = message.text.split()
-        uid = int(parts[1])
-        number = parts[2]
-        user_numbers[uid] = number
-        mk = types.InlineKeyboardMarkup()
-        mk.add(types.InlineKeyboardButton("🔑 Get OTP - Click Here 👇", callback_data=f"go_{uid}"))
-        txt = f"🎉 <b>NUMBER READY! 🔥</b> 🎉\n━━━━━━━━━━━━\n📱 Number: <code>{number}</code>\n━━━━━━━━━━━━\n📲 <b>Ab Whatsapp me login karo:</b>\n1️⃣ Number daalo\n2️⃣ Niche <b>Get OTP</b> dikhega\n3️⃣ <b>Get OTP button dabao 👇</b>\n4️⃣ OTP mil jayega!\n━━━━━━━━━━━━"
-        bot.send_message(uid, txt, parse_mode="HTML", reply_markup=mk)
-        bot.send_message(message.chat.id, f"✅ <b>Number {number} sent to {uid}</b> ✅\nUser ko bol Whatsapp me login kare aur Get OTP dabaye!", parse_mode="HTML")
+        order_id = parts[1]
+        res = api_cancel(order_id)
+        bot.send_message(message.chat.id, f"Cancel {order_id}: {res}")
     except Exception as e:
-        bot.send_message(message.chat.id, f"Use: /number USERID +91NUMBER\nError: {e}")
-
-@bot.message_handler(commands=['otp'])
-def give_otp(message):
-    if message.from_user.id != ADMIN_ID: return
-    try:
-        parts = message.text.split()
-        uid = int(parts[1])
-        otp = parts[2]
-        num = user_numbers.get(uid, "")
-        bot.send_message(uid, f"🔑 <b>OTP READY! 🎉</b> 🔑\n━━━━━━━━━━━━\n📱 Number: <code>{num}</code>\n🔐 OTP: <code>{otp}</code>\n━━━━━━━━━━━━\n⚡ Jaldi daalo! OTP expire ho jayega!", parse_mode="HTML")
-        bot.send_message(message.chat.id, f"✅ OTP {otp} sent to {uid} 🔥")
-        import time
-        time.sleep(1)
-        retention_text = f"""🎉 <b>ORDER COMPLETED SUCCESSFULLY! 🔥</b> 🎉
-━━━━━━━━━━━━━━━━━━━━
-✅ Number: <code>{num}</code>
-✅ OTP Delivered
-━━━━━━━━━━━━━━━━━━━━
-
-🎁 <b>THANK YOU FOR USING ZEVRIC! ❤️💜</b>
-
-🔥 <b>SPECIAL OFFERS FOR YOU:</b>
-💰 Next Order pe <b>10% OFF</b> - Code: <code>ZEVRIC10</code>
-👥 Refer karo & <b>₹20 Earn</b> karo
-⭐ Review do & Extra Discount pao!
-
-━━━━━━━━━━━━━━━━━━━━
-🚀 <b>Dubara Chahiye? 1 Click me Order Karo!</b>
-62 Countries Available - Instant Delivery! ⚡
-
-💜 <b>ZEVRIC OTP BAZAAR - Trusted by 10K+ Users</b>
-"""
-        bot.send_message(uid, retention_text, parse_mode="HTML", reply_markup=retention_menu())
-    except Exception as e:
-        bot.send_message(message.chat.id, f"Use: /otp USERID OTP\n{e}")
+        bot.send_message(message.chat.id, f"Use: /cancel ORDER_ID\nError: {e}")
 
 @bot.message_handler(content_types=['photo'])
 def photo_handler(message):
     uid = message.from_user.id
     sel = user_selection.get(uid)
     if not sel:
-        bot.send_message(message.chat.id, "⚠️ Pehle /buy se server select karo! 🌍", parse_mode="HTML")
+        bot.send_message(message.chat.id, "⚠️ Pehle /buy se server select karo! 📱", parse_mode="HTML")
         return
     info = COUNTRIES[sel]
-    username = f"@{message.from_user.username}" if message.from_user.username else "No username"
-    name = message.from_user.first_name or ""
-    order_txt = f"💰 <b>NEW ORDER - {info['flag']} {info['sname']} 🔥</b>\n━━━━━━━━━━━━\n💰 Price: ₹{info['price']} / ${round(info['price']/85,2)} USDT\n👤 {username} | {name} 🚀\n🆔 ID: <code>{uid}</code>\n🌍 Server: {info['sname']}"
-    bot.send_message(ADMIN_ID, order_txt, parse_mode="HTML")
-    bot.forward_message(ADMIN_ID, message.chat.id, message.message_id)
-    mk = types.InlineKeyboardMarkup(row_width=2)
-    mk.add(types.InlineKeyboardButton(f"✅ Approve {info['flag']} ₹{info['price']}", callback_data=f"ap_{uid}_{sel}"), types.InlineKeyboardButton("❌ Reject", callback_data=f"rj_{uid}"))
-    bot.send_message(ADMIN_ID, "👇 Action Lo:", reply_markup=mk)
-    bot.send_message(message.chat.id, f"📸 Screenshot Received for {info['flag']} {info['sname']} ✅\n⏳ Admin 2 min me check karega! 🚀\n\nAfter payment:\n1️⃣ Admin number dega\n2️⃣ Whatsapp me login karo\n3️⃣ Niche <b>Get OTP</b> dabao\n4️⃣ OTP mil jayega! 💜", parse_mode="HTML")
+    bot.send_message(message.chat.id, f"📸 Screenshot mila! ✅\n🤖 <b>premiumotp.pro se Whatsapp number le raha hu...</b>\n{info['flag']} {info['sname']} - ₹{info['price']}\n5 sec wait karo! ⚡", parse_mode="HTML")
+    
+    result = api_buy_number(info['server'])
+    if result and result.get("number"):
+        phone = result["number"]
+        order_id = result["id"]
+        user_numbers[uid] = phone
+        user_activations[uid] = order_id
+        
+        bot.send_message(ADMIN_ID, f"🤖 <b>AUTO BUY SUCCESS! premiumotp.pro</b>\n{info['flag']} {sel}\nUser: {uid} @{message.from_user.username}\nNumber: {phone}\nOrder ID: {order_id}\nRaw: {result['raw']}", parse_mode="HTML")
+        bot.forward_message(ADMIN_ID, message.chat.id, message.message_id)
+        
+        mk = types.InlineKeyboardMarkup()
+        mk.add(types.InlineKeyboardButton("🔑 Get OTP (Auto) - Click Here 👇", callback_data=f"go_{uid}"))
+        mk.add(types.InlineKeyboardButton("❌ Cancel & Refund", callback_data=f"cancel_{order_id}"))
+        
+        txt = f"✅ <b>PAYMENT APPROVED + WHATSAPP NUMBER AUTO! 🤖🎉</b>\n━━━━━━━━━━━━\n{info['flag']} {info['sname']} - Whatsapp Only ✅\n💰 ₹{info['price']}\n📱 Number: <code>{phone}</code>\n🆔 Order: <code>{order_id}</code>\n━━━━━━━━━━━━\n📲 <b>Ab Whatsapp me login karo:</b>\n1️⃣ Number daalo: <code>{phone}</code>\n2️⃣ Get OTP dabao 👇\n🤖 Bot khud OTP dega premiumotp.pro se!\n━━━━━━━━━━━━\n⚠️ Agar 5 min me OTP na aaye to Cancel dabao!"
+        bot.send_message(uid, txt, parse_mode="HTML", reply_markup=mk)
+    else:
+        err = result.get("error", "Unknown") if result else "No response"
+        bot.send_message(ADMIN_ID, f"❌ <b>AUTO BUY FAILED! premiumotp.pro</b>\n{info['flag']} {sel} for {uid}\nError: {err}\nServer: {info['server']}\nAPI Key: {API_KEY[:6]}...", parse_mode="HTML")
+        bot.forward_message(ADMIN_ID, message.chat.id, message.message_id)
+        
+        if "NO_NUMBERS" in str(err) or "NO_BALANCE" in str(err):
+            bot.send_message(uid, f"⚠️ <b>{info['flag']} {info['sname']} me number khatam ya balance kam hai!</b>\n\nError: <code>{err}</code>\n\nAdmin ko forward kiya, dusra server try karo ya @just_zevric ko bolo!", parse_mode="HTML")
+        else:
+            bot.send_message(uid, f"⚠️ <b>Auto buy failed!</b>\nError: <code>{err}</code>\nAdmin ko forward kiya hai, 2 min me manual number dega! @just_zevric", parse_mode="HTML")
 
-print("FINAL PERFECT - UPI + USDT + BACK + 62 SERVERS - STARTED 🔥🔥🔥")
+print("PREMIUMOTP.PRO FULL AUTO - ONLY WHATSAPP - STARTED 🔥🤖")
 app = Flask(__name__)
 @app.route('/')
 def home():
-    return "Zevric Bot Running - UPI + USDT"
+    return "Zevric PremiumOTP.pro Auto Bot - Whatsapp Only Running!"
 
 def run_web():
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
